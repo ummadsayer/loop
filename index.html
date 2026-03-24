@@ -1,0 +1,1400 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<title>Loop — Your Circle, Your Feed</title>
+<meta name="description" content="A private social network. Only your friends can see your posts.">
+<meta name="theme-color" content="#c9a84c">
+
+<!--
+  ╔══════════════════════════════════════════════════════════╗
+  ║  LOOP — FRIEND-ONLY SOCIAL MEDIA  (Firebase Free Tier)  ║
+  ╠══════════════════════════════════════════════════════════╣
+  ║  SETUP STEPS:                                           ║
+  ║  1. Go to https://console.firebase.google.com           ║
+  ║  2. Create a project → Enable Firestore & Auth          ║
+  ║  3. Auth → Sign-in method → Enable Email/Password       ║
+  ║  4. Firestore → Rules → Paste these rules:              ║
+  ║                                                         ║
+  ║  rules_version = '2';                                   ║
+  ║  service cloud.firestore {                              ║
+  ║    match /databases/{database}/documents {              ║
+  ║      match /{document=**} {                             ║
+  ║        allow read, write: if request.auth != null;      ║
+  ║      }                                                  ║
+  ║    }                                                    ║
+  ║  }                                                      ║
+  ║                                                         ║
+  ║  5. Replace FIREBASE_CONFIG below with your config      ║
+  ║  6. Set ADMIN_EMAIL to your email                       ║
+  ╚══════════════════════════════════════════════════════════╝
+-->
+
+<script>
+const firebaseConfig = {
+  apiKey: "AIzaSyCLFiSo1pTzAQsxo16CcyBEW-VThJC2LxQ",
+  authDomain: "loop-the-social-media.firebaseapp.com",
+  projectId: "loop-the-social-media",
+  storageBucket: "loop-the-social-media.firebasestorage.app",
+  messagingSenderId: "671246339308",
+  appId: "1:671246339308:web:4e33b73beb7d3b6f6b69c9",
+  measurementId: "G-5SJJT88BP8"
+};
+const ADMIN_EMAIL = "ahnaftahsin99@gmail.com";
+</script>
+
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@400;600;700&family=Manrope:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+
+<style>
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+:root{
+  --bg:#07090d;--s1:#0d1117;--s2:#131920;--s3:#1a2230;
+  --b1:#1e2a38;--b2:#263345;
+  --gold:#c9a84c;--gold2:#e8c76d;--gd:rgba(201,168,76,.10);--gg:rgba(201,168,76,.25);
+  --text:#eae6de;--t2:#8a919e;--t3:#4a5568;
+  --red:#e05252;--green:#2ecc8a;--blue:#4a9eff;--bd:rgba(74,158,255,.14);
+  --sh:0 16px 64px rgba(0,0,0,.75);
+  --fd:'Playfair Display',Georgia,serif;--fu:'Manrope',system-ui,sans-serif;
+  --tr:.18s cubic-bezier(.4,0,.2,1);
+  --nav-h:56px;--bot-h:60px;
+}
+html,body{height:100%;overflow:hidden;background:var(--bg);color:var(--text);font-family:var(--fu)}
+::-webkit-scrollbar{width:3px}::-webkit-scrollbar-track{background:transparent}::-webkit-scrollbar-thumb{background:var(--b2);border-radius:3px}
+.hidden{display:none!important}
+button{cursor:pointer;font-family:var(--fu)}
+
+/* ── LOADER ─────────────────────────────── */
+#app-loader{position:fixed;inset:0;background:var(--bg);display:flex;flex-direction:column;align-items:center;justify-content:center;z-index:9999;gap:14px;transition:opacity .5s}
+#app-loader .L{font-family:var(--fd);font-size:2.6rem;color:var(--gold);letter-spacing:.2em;font-weight:700}
+#app-loader .S{font-size:.72rem;color:var(--t3);letter-spacing:.18em;text-transform:uppercase}
+.spin{width:26px;height:26px;border:2px solid var(--b2);border-top-color:var(--gold);border-radius:50%;animation:spin .7s linear infinite}
+@keyframes spin{to{transform:rotate(360deg)}}
+
+/* ── AUTH ───────────────────────────────── */
+#auth-screen{height:100vh;display:flex;align-items:center;justify-content:center;position:relative;overflow:hidden}
+#auth-screen::before{content:'LOOP';position:absolute;font-family:var(--fd);font-size:22vw;font-weight:700;color:rgba(201,168,76,.03);letter-spacing:.1em;user-select:none;pointer-events:none;top:50%;left:50%;transform:translate(-50%,-50%)}
+.acard{background:var(--s1);border:1px solid var(--b1);border-radius:22px;padding:42px 36px;width:min(430px,95vw);position:relative;z-index:1;box-shadow:var(--sh);animation:fup .4s ease;max-height:95vh;overflow-y:auto}
+@keyframes fup{from{opacity:0;transform:translateY(18px)}}
+.alogo{font-family:var(--fd);font-size:2rem;color:var(--gold);letter-spacing:.18em;text-align:center;font-weight:700;margin-bottom:4px}
+.atag{text-align:center;color:var(--t2);font-size:.8rem;margin-bottom:24px;letter-spacing:.05em}
+.tabs{display:flex;margin-bottom:20px;border-bottom:1px solid var(--b1)}
+.tab{flex:1;padding:9px;text-align:center;font-size:.85rem;color:var(--t2);cursor:pointer;border-bottom:2px solid transparent;margin-bottom:-1px;transition:var(--tr);font-weight:600;letter-spacing:.04em}
+.tab.on{color:var(--gold);border-bottom-color:var(--gold)}
+.tab:hover:not(.on){color:var(--text)}
+.field{display:flex;flex-direction:column;gap:5px;margin-bottom:11px}
+.field label{font-size:.7rem;font-weight:700;color:var(--t2);letter-spacing:.09em;text-transform:uppercase}
+.field input,.field textarea,.field select{background:var(--s2);border:1px solid var(--b1);border-radius:10px;padding:10px 13px;color:var(--text);font-family:var(--fu);font-size:.89rem;outline:none;transition:var(--tr);width:100%}
+.field input:focus,.field textarea:focus,.field select:focus{border-color:var(--gold);box-shadow:0 0 0 3px var(--gd)}
+.field input::placeholder,.field textarea::placeholder{color:var(--t3)}
+.field .hint{font-size:.68rem;color:var(--t3);margin-top:2px}
+.field textarea{resize:vertical;min-height:70px;line-height:1.55}
+.btn{width:100%;padding:11px;border:none;border-radius:10px;font-family:var(--fu);font-size:.88rem;font-weight:700;transition:var(--tr);letter-spacing:.04em;display:flex;align-items:center;justify-content:center;gap:7px}
+.btn-gold{background:linear-gradient(135deg,#c9a84c,#e8c76d);color:#07090d}
+.btn-gold:hover{transform:translateY(-1px);box-shadow:0 5px 20px var(--gg)}
+.btn-gold:disabled{opacity:.4;cursor:not-allowed;transform:none;box-shadow:none}
+.btn-ghost{background:var(--s2);color:var(--t2);border:1px solid var(--b1)}
+.btn-ghost:hover{border-color:var(--gold);color:var(--gold)}
+.btn-danger{background:rgba(224,82,82,.1);color:var(--red);border:1px solid rgba(224,82,82,.28)}
+.btn-danger:hover{background:var(--red);color:#fff}
+.btn-blue{background:var(--bd);color:var(--blue);border:1px solid rgba(74,158,255,.25)}
+.btn-blue:hover{background:var(--blue);color:#fff}
+.btn-green{background:rgba(46,204,138,.1);color:var(--green);border:1px solid rgba(46,204,138,.28)}
+.btn-green:hover{background:var(--green);color:#07090d}
+.btn-sm{width:auto;padding:6px 14px;font-size:.78rem}
+.mbox{border-radius:9px;padding:9px 13px;font-size:.8rem;margin-bottom:11px;line-height:1.5}
+.mbox.err{background:rgba(224,82,82,.1);border:1px solid rgba(224,82,82,.22);color:#e07070}
+.mbox.ok{background:rgba(46,204,138,.1);border:1px solid rgba(46,204,138,.22);color:#5dba8a}
+
+/* ── PENDING ────────────────────────────── */
+#pending-screen{height:100vh;display:flex;align-items:center;justify-content:center}
+.pcard{background:var(--s1);border:1px solid var(--b1);border-radius:22px;padding:52px 36px;text-align:center;max-width:400px;width:95vw;animation:fup .4s ease}
+.picon{font-size:3rem;margin-bottom:14px;display:block;animation:pulse 2s ease-in-out infinite}
+@keyframes pulse{0%,100%{transform:scale(1)}50%{transform:scale(1.1)}}
+.ptitle{font-family:var(--fd);font-size:1.8rem;color:var(--gold);margin-bottom:8px;font-weight:600}
+.psub{color:var(--t2);font-size:.85rem;line-height:1.8;margin-bottom:24px}
+.pout{color:var(--t3);font-size:.78rem;cursor:pointer;text-decoration:underline}
+.pout:hover{color:var(--gold)}
+
+/* ── ADMIN ──────────────────────────────── */
+#admin-screen{height:100vh;display:flex;flex-direction:column}
+.admin-bar{display:flex;align-items:center;gap:10px;padding:0 18px;height:var(--nav-h);background:var(--s1);border-bottom:1px solid var(--b1);flex-shrink:0}
+.admin-bar h1{font-family:var(--fd);font-size:1.3rem;color:var(--gold);font-weight:600;letter-spacing:.06em;flex:1}
+.admin-tabs{display:flex;border-bottom:1px solid var(--b1);background:var(--s1);padding:0 18px}
+.adtab{padding:9px 16px;font-size:.8rem;font-weight:600;color:var(--t2);cursor:pointer;border-bottom:2px solid transparent;margin-bottom:-1px;transition:var(--tr);letter-spacing:.04em}
+.adtab.on{color:var(--gold);border-bottom-color:var(--gold)}
+.admin-body{flex:1;overflow-y:auto;padding:18px}
+.asec-title{font-family:var(--fd);font-size:1.15rem;color:var(--text);margin-bottom:10px;padding-bottom:7px;border-bottom:1px solid var(--b1)}
+.ucards{display:grid;grid-template-columns:repeat(auto-fill,minmax(260px,1fr));gap:9px;margin-bottom:20px}
+.ucard{background:var(--s1);border:1px solid var(--b1);border-radius:13px;padding:13px;overflow:hidden;position:relative}
+.ucard::before{content:'';position:absolute;top:0;left:0;right:0;height:2px;background:linear-gradient(90deg,var(--gold),var(--gold2))}
+.uc-row{display:flex;align-items:center;gap:9px;margin-bottom:9px}
+.uc-av{width:38px;height:38px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-weight:700;font-size:.9rem;color:var(--gold);background:var(--gd);border:1.5px solid var(--gold);flex-shrink:0;background-size:cover;background-position:center}
+.uc-info .uc-nm{font-weight:600;font-size:.87rem;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.uc-info .uc-un{font-size:.71rem;color:var(--gold)}
+.uc-info .uc-em{font-size:.7rem;color:var(--t3)}
+.uc-actions{display:flex;gap:6px}
+.uc-actions button{flex:1;padding:6px;border-radius:8px;font-size:.74rem;font-weight:700;cursor:pointer;border:none;font-family:var(--fu);transition:var(--tr)}
+.ba{background:var(--green);color:#07090d}.ba:hover{opacity:.88}
+.br{background:rgba(224,82,82,.12);color:#e07070;border:1px solid rgba(224,82,82,.25)!important}.br:hover{background:var(--red);color:#fff}
+.bcnt{display:inline-flex;align-items:center;justify-content:center;background:var(--gd);color:var(--gold);border-radius:12px;padding:1px 6px;font-size:.68rem;font-weight:700;margin-left:5px}
+
+/* ── MAIN APP ───────────────────────────── */
+#main-screen{height:100vh;display:flex;flex-direction:column;position:relative}
+.top-nav{display:flex;align-items:center;padding:0 14px;height:var(--nav-h);background:var(--s1);border-bottom:1px solid var(--b1);gap:9px;flex-shrink:0;position:relative;z-index:50}
+.tnlogo{font-family:var(--fd);font-size:1.45rem;color:var(--gold);letter-spacing:.15em;font-weight:700;flex:1}
+.tnav-btn{width:36px;height:36px;border-radius:10px;border:1px solid var(--b1);background:transparent;color:var(--t2);display:flex;align-items:center;justify-content:center;transition:var(--tr);flex-shrink:0;position:relative}
+.tnav-btn:hover{border-color:var(--gold);color:var(--gold);background:var(--gd)}
+.tnav-badge{position:absolute;top:-3px;right:-3px;width:16px;height:16px;background:var(--red);border-radius:50%;font-size:.6rem;font-weight:700;color:#fff;display:flex;align-items:center;justify-content:center;border:2px solid var(--s1)}
+.nav-av-sm{width:34px;height:34px;border-radius:50%;border:1.5px solid var(--gold);display:flex;align-items:center;justify-content:center;font-size:.78rem;font-weight:700;color:var(--gold);cursor:pointer;background-size:cover;background-position:center;overflow:hidden;flex-shrink:0}
+.view-container{flex:1;overflow:hidden;position:relative}
+.view{position:absolute;inset:0;overflow-y:auto;display:none}
+.view.active{display:block}
+
+/* ── BOTTOM NAV ─────────────────────────── */
+.bottom-nav{display:flex;align-items:stretch;height:var(--bot-h);background:var(--s1);border-top:1px solid var(--b1);flex-shrink:0;padding:0 6px}
+.bnav-item{flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:4px;cursor:pointer;border-radius:10px;transition:var(--tr);color:var(--t3);position:relative}
+.bnav-item:hover{color:var(--t2)}
+.bnav-item.active{color:var(--gold)}
+.bnav-item svg{width:22px;height:22px;transition:var(--tr)}
+.bnav-item.active svg{filter:drop-shadow(0 0 6px rgba(201,168,76,.5))}
+.bnav-label{font-size:.62rem;font-weight:600;letter-spacing:.05em;text-transform:uppercase}
+.bnav-dot{width:5px;height:5px;background:var(--red);border-radius:50%;position:absolute;top:7px;right:calc(50% - 14px);border:1.5px solid var(--s1)}
+
+/* ── FEED VIEW ──────────────────────────── */
+.create-post-box{margin:12px 14px;background:var(--s1);border:1px solid var(--b1);border-radius:16px;padding:13px;display:flex;align-items:center;gap:10px;cursor:pointer;transition:var(--tr)}
+.create-post-box:hover{border-color:var(--gold);background:var(--gd)}
+.create-av{width:38px;height:38px;border-radius:50%;border:1.5px solid var(--b2);display:flex;align-items:center;justify-content:center;font-size:.9rem;font-weight:700;color:var(--gold);flex-shrink:0;background-size:cover;background-position:center;overflow:hidden}
+.create-hint{color:var(--t3);font-size:.87rem;flex:1}
+.create-icon{font-size:1.1rem;opacity:.5}
+.posts-list{padding:0 14px 80px}
+.feed-empty{display:flex;flex-direction:column;align-items:center;justify-content:center;padding:60px 24px;gap:12px;text-align:center}
+.feed-empty .ei{font-size:2.5rem;opacity:.3}
+.feed-empty .et{font-family:var(--fd);font-size:1.4rem;color:var(--t2)}
+.feed-empty .es{color:var(--t3);font-size:.84rem;line-height:1.7;max-width:280px}
+
+/* ── POST CARD ──────────────────────────── */
+.post-card{background:var(--s1);border:1px solid var(--b1);border-radius:16px;margin-bottom:10px;overflow:hidden;animation:fup .25s ease;transition:var(--tr)}
+.post-card:hover{border-color:var(--b2)}
+.pc-head{display:flex;align-items:center;gap:9px;padding:13px 13px 0}
+.pc-av{width:40px;height:40px;border-radius:50%;border:1.5px solid var(--b1);display:flex;align-items:center;justify-content:center;font-weight:700;color:var(--gold);font-size:.9rem;flex-shrink:0;cursor:pointer;background-size:cover;background-position:center;overflow:hidden}
+.pc-info{flex:1;min-width:0}
+.pc-nm{font-weight:700;font-size:.87rem;display:flex;align-items:center;gap:4px;cursor:pointer}
+.pc-nm:hover{color:var(--gold)}
+.pc-un{font-size:.72rem;color:var(--t3)}
+.pc-time{font-size:.7rem;color:var(--t3)}
+.pc-more{width:28px;height:28px;border-radius:7px;border:none;background:transparent;color:var(--t3);display:flex;align-items:center;justify-content:center;font-size:1rem;transition:var(--tr)}
+.pc-more:hover{background:var(--s2);color:var(--text)}
+.pc-body{padding:10px 13px}
+.pc-text{font-size:.9rem;line-height:1.6;color:var(--text);white-space:pre-wrap;word-break:break-word}
+.pc-img{width:100%;max-height:340px;object-fit:cover;border-radius:10px;margin-top:9px;display:block}
+.pc-actions{display:flex;align-items:center;gap:2px;padding:5px 8px 9px;border-top:1px solid rgba(255,255,255,.04);margin-top:6px}
+.pca-btn{display:flex;align-items:center;gap:5px;padding:6px 10px;border-radius:9px;border:none;background:transparent;color:var(--t3);font-family:var(--fu);font-size:.79rem;font-weight:600;transition:var(--tr);cursor:pointer}
+.pca-btn:hover{background:var(--s2);color:var(--text)}
+.pca-btn.liked{color:#e05252}
+.pca-btn.liked svg{fill:#e05252}
+.pca-btn svg{width:17px;height:17px;transition:var(--tr)}
+.pc-spacer{flex:1}
+
+/* ── FRIENDS VIEW ───────────────────────── */
+.fv-section{padding:12px 14px 0}
+.fv-title{font-family:var(--fd);font-size:1.1rem;color:var(--text);margin-bottom:10px;display:flex;align-items:center;gap:7px}
+.fv-cnt{background:var(--gd);color:var(--gold);border-radius:10px;padding:1px 7px;font-size:.7rem;font-weight:700}
+.search-box{display:flex;align-items:center;background:var(--s2);border:1px solid var(--b1);border-radius:10px;padding:8px 11px;gap:7px;margin-bottom:10px;transition:var(--tr)}
+.search-box:focus-within{border-color:var(--gold);box-shadow:0 0 0 3px var(--gd)}
+.search-box svg{width:14px;height:14px;color:var(--t3);flex-shrink:0}
+.search-box input{background:none;border:none;outline:none;color:var(--text);font-family:var(--fu);font-size:.87rem;flex:1}
+.search-box input::placeholder{color:var(--t3)}
+.user-row{display:flex;align-items:center;gap:10px;padding:10px;border-radius:12px;background:var(--s1);border:1px solid var(--b1);margin-bottom:7px;transition:var(--tr)}
+.user-row:hover{border-color:var(--b2)}
+.ur-av{width:42px;height:42px;border-radius:50%;border:1.5px solid var(--b1);display:flex;align-items:center;justify-content:center;font-weight:700;color:var(--gold);font-size:.92rem;flex-shrink:0;cursor:pointer;background-size:cover;background-position:center;overflow:hidden}
+.ur-info{flex:1;min-width:0}
+.ur-nm{font-weight:600;font-size:.87rem;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;cursor:pointer;display:flex;align-items:center;gap:4px}
+.ur-nm:hover{color:var(--gold)}
+.ur-un{font-size:.72rem;color:var(--t3)}
+.ur-actions{display:flex;gap:5px;flex-shrink:0}
+.ur-btn{padding:5px 11px;border-radius:8px;font-size:.74rem;font-weight:700;cursor:pointer;border:none;font-family:var(--fu);transition:var(--tr)}
+.ub-add{background:var(--gd);color:var(--gold);border:1px solid rgba(201,168,76,.28)}.ub-add:hover{background:var(--gold);color:#07090d}
+.ub-cancel{background:var(--s2);color:var(--t2);border:1px solid var(--b1)}.ub-cancel:hover{background:var(--b1);color:var(--text)}
+.ub-accept{background:rgba(46,204,138,.1);color:var(--green);border:1px solid rgba(46,204,138,.28)}.ub-accept:hover{background:var(--green);color:#07090d}
+.ub-decline{background:rgba(224,82,82,.08);color:#e07070;border:1px solid rgba(224,82,82,.2)}.ub-decline:hover{background:var(--red);color:#fff}
+.ub-friends{background:var(--s2);color:var(--t2);border:1px solid var(--b1)}
+.ub-unfriend{background:rgba(224,82,82,.08);color:#e07070;border:1px solid rgba(224,82,82,.18)}.ub-unfriend:hover{background:var(--red);color:#fff}
+.friends-tabs{display:flex;gap:5px;margin-bottom:11px}
+.ftab{flex:1;padding:8px;border-radius:9px;font-size:.78rem;font-weight:600;text-align:center;cursor:pointer;border:1px solid var(--b1);background:transparent;color:var(--t2);transition:var(--tr)}
+.ftab.on{background:var(--gd);border-color:rgba(201,168,76,.3);color:var(--gold)}
+.fv-pb{padding-bottom:80px}
+
+/* ── PROFILE VIEW ───────────────────────── */
+.prof-hero{background:var(--s1);border-bottom:1px solid var(--b1);padding:20px 16px 16px;display:flex;flex-direction:column;align-items:center;text-align:center;gap:8px}
+.pav-wrap{position:relative;width:80px;height:80px}
+.pav-big{width:80px;height:80px;border-radius:50%;background:var(--gd);border:2.5px solid var(--gold);display:flex;align-items:center;justify-content:center;font-size:2rem;color:var(--gold);background-size:cover;background-position:center;overflow:hidden}
+.pav-edit-btn{position:absolute;bottom:0;right:0;width:24px;height:24px;background:var(--gold);border-radius:50%;border:2px solid var(--s1);display:flex;align-items:center;justify-content:center;cursor:pointer;font-size:.65rem;color:#07090d;transition:var(--tr)}
+.pav-edit-btn:hover{transform:scale(1.1)}
+.ph-name{font-family:var(--fd);font-size:1.5rem;color:var(--text);font-weight:600;display:flex;align-items:center;gap:6px;flex-wrap:wrap;justify-content:center}
+.ph-un{font-size:.82rem;color:var(--t2)}
+.ph-tagline{font-size:.85rem;color:var(--gold);font-style:italic}
+.ph-bio{font-size:.83rem;color:var(--t2);line-height:1.65;max-width:300px;white-space:pre-wrap}
+.ph-stats{display:flex;gap:24px;margin-top:4px}
+.ph-stat{display:flex;flex-direction:column;align-items:center;gap:2px}
+.ph-stat-n{font-family:var(--fd);font-size:1.3rem;color:var(--gold);font-weight:600}
+.ph-stat-l{font-size:.71rem;color:var(--t3);text-transform:uppercase;letter-spacing:.06em}
+.ph-actions{display:flex;gap:7px;margin-top:4px}
+.prof-posts{padding:12px 14px 80px}
+.prof-posts-title{font-family:var(--fd);font-size:1.05rem;color:var(--t2);margin-bottom:10px;padding-bottom:8px;border-bottom:1px solid var(--b1);letter-spacing:.05em}
+
+/* ── MODALS ─────────────────────────────── */
+.overlay{position:fixed;inset:0;background:rgba(0,0,0,.8);z-index:800;display:flex;align-items:center;justify-content:center;backdrop-filter:blur(4px);padding:12px}
+.modal{background:var(--s1);border:1px solid var(--b1);border-radius:20px;padding:26px 22px;width:min(480px,100%);position:relative;animation:fup .28s ease;max-height:90vh;overflow-y:auto}
+.modal-bottom{position:fixed;inset:auto 0 0;background:var(--s1);border-top:1px solid var(--b1);border-radius:20px 20px 0 0;padding:22px 18px;animation:slideUp .28s ease;max-height:88vh;overflow-y:auto;z-index:900}
+@keyframes slideUp{from{transform:translateY(100%)}}
+.mc{position:absolute;top:12px;right:12px;width:28px;height:28px;border:none;background:var(--s2);border-radius:8px;cursor:pointer;color:var(--t2);font-size:.95rem;display:flex;align-items:center;justify-content:center;transition:var(--tr)}
+.mc:hover{color:var(--text);background:var(--b1)}
+.mtitle{font-family:var(--fd);font-size:1.4rem;color:var(--gold);letter-spacing:.06em;margin-bottom:18px;font-weight:600}
+.divider{height:1px;background:var(--b1);margin:14px 0}
+.av-grid{display:grid;grid-template-columns:repeat(7,1fr);gap:5px;margin-bottom:10px}
+.av-opt{width:100%;aspect-ratio:1;border-radius:8px;display:flex;align-items:center;justify-content:center;font-size:1.1rem;cursor:pointer;border:2px solid transparent;transition:var(--tr);background:var(--s2)}
+.av-opt:hover,.av-opt.sel{border-color:var(--gold);background:var(--gd)}
+.col-row{display:flex;gap:6px;flex-wrap:wrap;margin-bottom:13px}
+.col-opt{width:27px;height:27px;border-radius:50%;cursor:pointer;border:2.5px solid transparent;transition:var(--tr)}
+.col-opt:hover{transform:scale(1.15)}
+.col-opt.sel{border-color:#fff;box-shadow:0 0 0 2px var(--b2)}
+
+/* ── COMMENTS ───────────────────────────── */
+.comments-area{max-height:260px;overflow-y:auto;display:flex;flex-direction:column;gap:8px;margin-bottom:12px}
+.comment-item{display:flex;gap:9px;align-items:flex-start}
+.cm-av{width:32px;height:32px;border-radius:50%;border:1px solid var(--b1);display:flex;align-items:center;justify-content:center;font-weight:700;font-size:.78rem;color:var(--gold);flex-shrink:0;background-size:cover;background-position:center;overflow:hidden}
+.cm-body{flex:1;background:var(--s2);border:1px solid var(--b1);border-radius:10px;padding:8px 11px}
+.cm-nm{font-size:.78rem;font-weight:700;color:var(--gold);margin-bottom:2px}
+.cm-text{font-size:.84rem;line-height:1.5;word-break:break-word}
+.cm-time{font-size:.66rem;color:var(--t3);margin-top:3px}
+.comment-input-row{display:flex;gap:8px;align-items:flex-end}
+.cm-textarea{flex:1;background:var(--s2);border:1px solid var(--b1);border-radius:10px;padding:9px 12px;color:var(--text);font-family:var(--fu);font-size:.87rem;outline:none;resize:none;line-height:1.5;max-height:80px;transition:var(--tr)}
+.cm-textarea:focus{border-color:var(--gold);box-shadow:0 0 0 3px var(--gd)}
+.cm-textarea::placeholder{color:var(--t3)}
+.cm-send{width:38px;height:38px;border-radius:10px;border:none;background:linear-gradient(135deg,#c9a84c,#e8c76d);color:#07090d;display:flex;align-items:center;justify-content:center;transition:var(--tr);flex-shrink:0}
+.cm-send:hover{transform:scale(1.06);box-shadow:0 3px 12px var(--gg)}
+
+/* ── USER PROFILE MODAL ─────────────────── */
+.up-hero{display:flex;flex-direction:column;align-items:center;gap:8px;margin-bottom:16px;text-align:center}
+.up-av{width:72px;height:72px;border-radius:50%;background:var(--gd);border:2px solid var(--gold);display:flex;align-items:center;justify-content:center;font-size:1.8rem;color:var(--gold);background-size:cover;background-position:center;overflow:hidden}
+.up-nm{font-family:var(--fd);font-size:1.4rem;color:var(--text);display:flex;align-items:center;gap:5px;flex-wrap:wrap;justify-content:center}
+.up-un{font-size:.82rem;color:var(--t2)}
+.up-tagline{font-size:.84rem;color:var(--gold);font-style:italic}
+.up-bio{font-size:.83rem;color:var(--t2);line-height:1.65;white-space:pre-wrap}
+.up-stats{display:flex;gap:22px;margin:4px 0}
+
+/* ── VERIFIED BADGE ─────────────────────── */
+.vb{display:inline-flex;width:15px;height:15px;flex-shrink:0;vertical-align:middle}
+
+/* ── TOASTS ─────────────────────────────── */
+.toasts{position:fixed;top:14px;right:14px;display:flex;flex-direction:column;gap:6px;z-index:9999;pointer-events:none}
+.toast{background:var(--s1);border:1px solid var(--b2);border-radius:11px;padding:10px 14px;font-size:.81rem;color:var(--text);min-width:200px;max-width:290px;box-shadow:var(--sh);animation:tin .2s ease;display:flex;align-items:center;gap:8px;pointer-events:all}
+.toast.s{border-left:3px solid var(--green)}.toast.e{border-left:3px solid var(--red)}.toast.i{border-left:3px solid var(--gold)}.toast.b{border-left:3px solid var(--blue)}
+@keyframes tin{from{opacity:0;transform:translateX(12px)}}
+@keyframes tout{to{opacity:0;transform:translateX(12px)}}
+
+/* ── MISC ───────────────────────────────── */
+.empty-block{text-align:center;padding:24px 12px;color:var(--t3);font-size:.82rem;line-height:1.8}
+.slabel{font-size:.7rem;font-weight:700;color:var(--t2);letter-spacing:.09em;text-transform:uppercase;margin-bottom:8px;display:block}
+
+@media(max-width:480px){
+  .acard{padding:26px 16px}
+  .modal{padding:20px 16px}
+  .ucards{grid-template-columns:1fr}
+}
+</style>
+</head>
+<body>
+
+<!-- ═══ LOADER ═══════════════════════════════ -->
+<div id="app-loader">
+  <div class="L">✦ LOOP</div>
+  <div class="S">Your Circle · Your Feed</div>
+  <div class="spin"></div>
+</div>
+
+<!-- ═══ AUTH SCREEN ══════════════════════════ -->
+<div id="auth-screen" class="hidden">
+  <div class="acard">
+    <h1 class="alogo">✦ LOOP</h1>
+    <p class="atag">Only friends see your posts</p>
+    <div class="tabs">
+      <div class="tab on" id="t-li" onclick="swTab('li')">Sign In</div>
+      <div class="tab" id="t-reg" onclick="swTab('reg')">Join</div>
+    </div>
+    <div id="auth-msg" class="mbox hidden" role="alert" aria-live="polite"></div>
+
+    <div id="f-li">
+      <div class="field"><label for="l-em">Email</label><input type="email" id="l-em" placeholder="you@example.com" autocomplete="email" onkeydown="if(event.key==='Enter')doLogin()"></div>
+      <div class="field"><label for="l-pw">Password</label><input type="password" id="l-pw" placeholder="••••••••" autocomplete="current-password" onkeydown="if(event.key==='Enter')doLogin()"></div>
+      <button class="btn btn-gold" id="btn-li" onclick="doLogin()">Sign In</button>
+    </div>
+
+    <div id="f-reg" class="hidden">
+      <div class="field"><label for="r-nm">Full Name</label><input type="text" id="r-nm" placeholder="Your name" autocomplete="name"></div>
+      <div class="field"><label for="r-un">Username</label><input type="text" id="r-un" placeholder="lowercase, no spaces" autocomplete="username" oninput="cleanUn(this)"><span class="hint">Letters, numbers, underscores · 3–20 chars</span></div>
+      <div class="field"><label for="r-em">Email</label><input type="email" id="r-em" placeholder="you@example.com" autocomplete="email"></div>
+      <div class="field"><label for="r-pw">Password</label><input type="password" id="r-pw" placeholder="Min 6 characters" autocomplete="new-password" onkeydown="if(event.key==='Enter')doReg()"></div>
+      <button class="btn btn-gold" id="btn-reg" onclick="doReg()">Request to Join</button>
+    </div>
+  </div>
+</div>
+
+<!-- ═══ PENDING SCREEN ═══════════════════════ -->
+<div id="pending-screen" class="hidden">
+  <div class="pcard">
+    <span class="picon">⏳</span>
+    <h2 class="ptitle">Awaiting Approval</h2>
+    <p class="psub">Your account is under review.<br>Admin will approve your access soon.<br>Come back and sign in later!</p>
+    <span class="pout" onclick="doLogout()">Sign out</span>
+  </div>
+</div>
+
+<!-- ═══ ADMIN SCREEN ══════════════════════════ -->
+<div id="admin-screen" class="hidden">
+  <div class="admin-bar">
+    <h1>✦ Loop Admin</h1>
+    <button class="tnav-btn" onclick="showScreen('main')" title="Back to App">
+      <svg fill="none" stroke="currentColor" viewBox="0 0 24 24" width="18" height="18"><path d="M3 9l9-7 9 7v11a2 2 0 01-2 2H5a2 2 0 01-2-2z"/><polyline points="9 22 9 12 15 12 15 22"/></svg>
+    </button>
+    <button class="tnav-btn" onclick="doLogout()" title="Sign Out">
+      <svg fill="none" stroke="currentColor" viewBox="0 0 24 24" width="18" height="18"><path d="M9 21H5a2 2 0 01-2-2V5a2 2 0 012-2h4"/><polyline points="16 17 21 12 16 7"/><line x1="21" y1="12" x2="9" y2="12"/></svg>
+    </button>
+  </div>
+  <div class="admin-tabs">
+    <div class="adtab on" id="adtab-p" onclick="swAdminTab('p')">Pending <span class="bcnt" id="acnt-p">0</span></div>
+    <div class="adtab" id="adtab-a" onclick="swAdminTab('a')">Approved</div>
+    <div class="adtab" id="adtab-r" onclick="swAdminTab('r')">Rejected</div>
+  </div>
+  <div class="admin-body">
+    <div id="adtab-p-body"><div class="asec-title">Pending Requests</div><div class="ucards" id="admin-pend"></div></div>
+    <div id="adtab-a-body" class="hidden"><div class="asec-title">Approved Users</div><div class="ucards" id="admin-appr"></div></div>
+    <div id="adtab-r-body" class="hidden"><div class="asec-title">Rejected Users</div><div class="ucards" id="admin-rej"></div></div>
+  </div>
+</div>
+
+<!-- ═══ MAIN APP ══════════════════════════════ -->
+<div id="main-screen" class="hidden">
+  <header class="top-nav">
+    <div class="tnlogo">✦ LOOP</div>
+    <button class="tnav-btn hidden" id="admin-nav-btn" onclick="showScreen('admin')" title="Admin Panel">⚙</button>
+    <div class="nav-av-sm" id="nav-av" onclick="switchView('profile')"></div>
+  </header>
+
+  <div class="view-container">
+    <!-- FEED VIEW -->
+    <div class="view active" id="view-feed">
+      <div class="create-post-box" id="create-post-trigger" onclick="openNewPostModal()">
+        <div class="create-av" id="feed-create-av"></div>
+        <span class="create-hint">What's on your mind?</span>
+        <span class="create-icon">✏️</span>
+      </div>
+      <div class="posts-list" id="feed-posts">
+        <div class="feed-empty"><span class="ei">🌐</span><div class="et">Your feed is empty</div><div class="es">Add friends to see their posts here. Go to the Friends tab to find people!</div></div>
+      </div>
+    </div>
+
+    <!-- FRIENDS VIEW -->
+    <div class="view" id="view-friends">
+      <div class="fv-section">
+        <div class="fv-title">Find People</div>
+        <div class="search-box">
+          <svg fill="none" stroke="currentColor" viewBox="0 0 24 24"><circle cx="11" cy="11" r="8"/><path d="M21 21l-4.35-4.35"/></svg>
+          <input type="text" id="people-search" placeholder="Search by name or @username…" oninput="performPeopleSearch(this.value)">
+        </div>
+        <div id="search-results"></div>
+        <div class="divider"></div>
+
+        <div class="fv-title" style="margin-top:4px">Friend Requests <span class="fv-cnt" id="req-count">0</span></div>
+        <div id="incoming-requests"><div class="empty-block">No pending requests</div></div>
+        <div class="divider"></div>
+
+        <div class="fv-title">My Friends <span class="fv-cnt" id="friends-count">0</span></div>
+        <div id="friends-list" class="fv-pb"><div class="empty-block">No friends yet — search for people above!</div></div>
+      </div>
+    </div>
+
+    <!-- PROFILE VIEW -->
+    <div class="view" id="view-profile">
+      <div class="prof-hero" id="my-prof-hero">
+        <div class="pav-wrap">
+          <div class="pav-big" id="my-pav"></div>
+          <div class="pav-edit-btn" onclick="openEditProfile()">✏️</div>
+        </div>
+        <div class="ph-name" id="my-ph-name">Name</div>
+        <div class="ph-un" id="my-ph-un">@username</div>
+        <div class="ph-tagline hidden" id="my-ph-tagline"></div>
+        <div class="ph-bio hidden" id="my-ph-bio"></div>
+        <div class="ph-stats">
+          <div class="ph-stat"><div class="ph-stat-n" id="stat-posts">0</div><div class="ph-stat-l">Posts</div></div>
+          <div class="ph-stat"><div class="ph-stat-n" id="stat-friends">0</div><div class="ph-stat-l">Friends</div></div>
+        </div>
+        <div class="ph-actions">
+          <button class="btn btn-ghost btn-sm" onclick="openEditProfile()">Edit Profile</button>
+        </div>
+      </div>
+      <div class="prof-posts">
+        <div class="prof-posts-title">My Posts</div>
+        <div id="my-posts-list"></div>
+      </div>
+    </div>
+  </div>
+
+  <nav class="bottom-nav">
+    <div class="bnav-item active" id="bnav-feed" onclick="switchView('feed')">
+      <svg fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2"><path d="M3 9l9-7 9 7v11a2 2 0 01-2 2H5a2 2 0 01-2-2z"/><polyline points="9 22 9 12 15 12 15 22"/></svg>
+      <span class="bnav-label">Feed</span>
+    </div>
+    <div class="bnav-item" id="bnav-friends" onclick="switchView('friends')">
+      <svg fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2"><path d="M17 21v-2a4 4 0 00-4-4H5a4 4 0 00-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 00-3-3.87"/><path d="M16 3.13a4 4 0 010 7.75"/></svg>
+      <span class="bnav-label">Friends</span>
+      <div class="bnav-dot hidden" id="bnav-req-dot"></div>
+    </div>
+    <div class="bnav-item" id="bnav-profile" onclick="switchView('profile')">
+      <svg fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2"><circle cx="12" cy="8" r="4"/><path d="M20 21a8 8 0 10-16 0"/></svg>
+      <span class="bnav-label">Profile</span>
+    </div>
+  </nav>
+</div>
+
+<!-- ═══ MODAL: NEW POST ═══════════════════════ -->
+<div class="overlay hidden" id="new-post-ov" onclick="closeNewPostIf(event)">
+  <div class="modal">
+    <button class="mc" onclick="closeNewPost()">✕</button>
+    <div class="mtitle">New Post</div>
+    <div class="field"><textarea id="np-text" rows="5" placeholder="Share something with your friends…" maxlength="1000"></textarea></div>
+    <div class="field"><label for="np-img">Image URL (optional)</label><input type="url" id="np-img" placeholder="https://…/photo.jpg"></div>
+    <div id="np-preview" style="margin-bottom:11px"></div>
+    <div id="np-msg" class="mbox hidden"></div>
+    <button class="btn btn-gold" id="btn-np" onclick="submitPost()">Post ✦</button>
+  </div>
+</div>
+
+<!-- ═══ MODAL: POST DETAIL / COMMENTS ════════ -->
+<div class="overlay hidden" id="post-detail-ov" onclick="closePostDetailIf(event)">
+  <div class="modal" style="max-width:520px">
+    <button class="mc" onclick="closePostDetail()">✕</button>
+    <div class="mtitle" style="font-size:1.1rem;margin-bottom:12px">Comments</div>
+    <div id="pd-post-preview" style="margin-bottom:14px"></div>
+    <div class="divider" style="margin:10px 0"></div>
+    <div class="comments-area" id="comments-area"></div>
+    <div class="comment-input-row">
+      <textarea class="cm-textarea" id="cm-inp" rows="2" placeholder="Write a comment…" onkeydown="if(event.key==='Enter'&&!event.shiftKey){event.preventDefault();submitComment()}"></textarea>
+      <button class="cm-send" onclick="submitComment()">
+        <svg fill="none" stroke="currentColor" viewBox="0 0 24 24" width="15" height="15" stroke-width="2.5"><line x1="22" y1="2" x2="11" y2="13"/><polygon points="22 2 15 22 11 13 2 9 22 2"/></svg>
+      </button>
+    </div>
+  </div>
+</div>
+
+<!-- ═══ MODAL: VIEW USER PROFILE ══════════════ -->
+<div class="overlay hidden" id="user-prof-ov" onclick="closeUserProfIf(event)">
+  <div class="modal">
+    <button class="mc" onclick="closeUserProf()">✕</button>
+    <div class="up-hero">
+      <div class="up-av" id="up-av"></div>
+      <div class="up-nm" id="up-nm">Name</div>
+      <div class="up-un" id="up-un">@username</div>
+      <div class="up-tagline hidden" id="up-tagline"></div>
+      <div class="up-bio hidden" id="up-bio"></div>
+      <div class="up-stats">
+        <div class="ph-stat"><div class="ph-stat-n" id="up-stat-posts">0</div><div class="ph-stat-l">Posts</div></div>
+        <div class="ph-stat"><div class="ph-stat-n" id="up-stat-friends">0</div><div class="ph-stat-l">Friends</div></div>
+      </div>
+    </div>
+    <div id="up-friend-action" style="display:flex;flex-direction:column;gap:8px"></div>
+    <div class="divider"></div>
+    <div style="margin-bottom:6px" class="slabel">Recent Posts</div>
+    <div id="up-posts" style="max-height:220px;overflow-y:auto;display:flex;flex-direction:column;gap:8px"></div>
+  </div>
+</div>
+
+<!-- ═══ MODAL: EDIT PROFILE ═══════════════════ -->
+<div class="overlay hidden" id="edit-prof-ov" onclick="closeEditProfIf(event)">
+  <div class="modal">
+    <button class="mc" onclick="closeEditProf()">✕</button>
+    <div class="mtitle">Edit Profile</div>
+    <div class="field"><label for="ep-name">Display Name</label><input type="text" id="ep-name" placeholder="Your name"></div>
+    <div class="field"><label for="ep-tagline">Status / Tagline</label><input type="text" id="ep-tagline" placeholder="What's your vibe?"></div>
+    <div class="field"><label for="ep-bio">Bio</label><textarea id="ep-bio" rows="3" placeholder="Tell people about yourself…"></textarea></div>
+    <div class="field"><label for="ep-photo">Photo URL (optional)</label><input type="url" id="ep-photo" placeholder="https://…/photo.jpg"></div>
+    <div class="field"><label>Avatar Emoji</label><div class="av-grid" id="ep-av-grid"></div></div>
+    <div class="field"><label>Avatar Color</label><div class="col-row" id="ep-col-row"></div></div>
+    <div id="ep-msg" class="mbox hidden" role="alert"></div>
+    <button class="btn btn-gold" id="btn-ep" onclick="saveProfile()">Save Changes</button>
+  </div>
+</div>
+
+<div class="toasts" id="toasts"></div>
+
+<!-- Firebase -->
+<script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-auth-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-firestore-compat.js"></script>
+
+<script>
+/* ══════════════════════════════════════
+   INIT
+══════════════════════════════════════ */
+firebase.initializeApp(FIREBASE_CONFIG);
+const auth = firebase.auth();
+const db   = firebase.firestore();
+const FS   = firebase.firestore.FieldValue;
+
+const EMOJIS = ['😊','😎','🦁','🐯','🦊','🐺','🦅','🌙','⚡','🔥','💎','🌸','🎭','🎯','🚀','👑','🌊','🎸','🐉','🎪','🍀','🎨'];
+const COLORS = ['#c9a84c','#4a9eff','#e05252','#2ecc8a','#9b59b6','#e67e22','#1abc9c','#e91e8c','#00bcd4','#ff5722','#607d8b','#f1c40f'];
+
+/* ── STATE ────────────────────────────── */
+let ME         = null;
+let MY_DOC     = null;
+let IS_ADMIN   = false;
+let REGISTERING= false;
+let FRIENDS    = []; // array of friend UIDs
+let ALL_USERS  = []; // approved users cache (for search)
+let FRIEND_REQUESTS = []; // incoming pending requests
+let MY_SENT_REQUESTS = []; // outgoing sent requests
+
+let unsubFeed     = null;
+let unsubMyPosts  = null;
+let unsubMyDoc    = null;
+let unsubReqs     = null;
+let unsubSentReqs = null;
+
+let selEmoji = null;
+let selColor = null;
+
+let activePostId   = null; // for comments modal
+let activeUserId   = null; // for user profile modal
+let unsubComments  = null;
+
+/* ══════════════════════════════════════
+   AUTH STATE
+══════════════════════════════════════ */
+auth.onAuthStateChanged(async user => {
+  if (REGISTERING) return;
+  if (!user) { hideLoader(); showScreen('auth'); return; }
+  ME = user;
+
+  let snap = await db.collection('users').doc(user.uid).get();
+  let tries = 0;
+  while (!snap.exists && tries < 12) { await sleep(600); snap = await db.collection('users').doc(user.uid).get(); tries++; }
+  if (!snap.exists) { toast('Account not found. Please register again.', 'e'); await auth.signOut(); return; }
+
+  MY_DOC = snap.data();
+  IS_ADMIN = (user.email === ADMIN_EMAIL);
+
+  if (IS_ADMIN && MY_DOC.status !== 'approved') {
+    await db.collection('users').doc(user.uid).update({ status: 'approved' });
+    MY_DOC.status = 'approved';
+  }
+
+  if (!IS_ADMIN && MY_DOC.status === 'rejected') { toast('Your access has been rejected.', 'e'); await auth.signOut(); return; }
+
+  if (!IS_ADMIN && MY_DOC.status !== 'approved') { hideLoader(); showScreen('pending'); return; }
+
+  FRIENDS = MY_DOC.friends || [];
+
+  // Listen to own doc for real-time friend changes
+  unsubMyDoc = db.collection('users').doc(ME.uid).onSnapshot(d => {
+    if (d.exists) {
+      const prev = MY_DOC;
+      MY_DOC = d.data();
+      const prevF = (prev?.friends || []).join(',');
+      const newF  = (MY_DOC.friends || []).join(',');
+      if (prevF !== newF) {
+        FRIENDS = MY_DOC.friends || [];
+        subscribeFeed();
+        renderProfileHeader();
+      }
+      renderProfileHeader();
+      updateNavAv();
+      updateStats();
+    }
+  });
+
+  db.collection('users').doc(ME.uid).update({ online: true, lastSeen: FS.serverTimestamp() }).catch(()=>{});
+  window.addEventListener('beforeunload', () => db.collection('users').doc(ME.uid).update({ online: false, lastSeen: FS.serverTimestamp() }));
+
+  await fetchAllUsers();
+  listenFriendRequests();
+  subscribeFeed();
+  loadMyPosts();
+
+  if (IS_ADMIN) { G('admin-nav-btn').classList.remove('hidden'); listenAdmin(); }
+
+  initUI();
+  hideLoader();
+  showScreen('main');
+});
+
+/* ══════════════════════════════════════
+   FEED SUBSCRIPTION
+══════════════════════════════════════ */
+function subscribeFeed() {
+  if (unsubFeed) { unsubFeed(); unsubFeed = null; }
+  const uids = [ME.uid, ...FRIENDS].slice(0, 30);
+  if (!uids.length) { renderFeed([]); return; }
+  unsubFeed = db.collection('posts')
+    .where('uid', 'in', uids)
+    .orderBy('createdAt', 'desc')
+    .limit(60)
+    .onSnapshot(snap => renderFeed(snap.docs), err => console.error('Feed:', err));
+}
+
+function renderFeed(docs) {
+  const el = G('feed-posts');
+  if (!docs.length) {
+    el.innerHTML = `<div class="feed-empty"><span class="ei">🌐</span><div class="et">Your feed is empty</div><div class="es">Add friends to see their posts here. Head to the Friends tab!</div></div>`;
+    return;
+  }
+  el.innerHTML = docs.map(d => postCardHTML(d.id, d.data())).join('');
+}
+
+function postCardHTML(id, p) {
+  const isMe  = p.uid === ME.uid;
+  const liked = (p.likes || []).includes(ME.uid);
+  const avS   = p.authorPhoto ? `background-image:url(${esc(p.authorPhoto)});background-color:transparent` : `background:${esc(p.authorColor||'var(--gd)')}`;
+  const avT   = p.authorPhoto ? '' : (p.authorEmoji || '?');
+  const ts    = p.createdAt ? ago(p.createdAt.toDate()) : '';
+  const likeCount = (p.likes || []).length;
+  const commentCount = p.commentCount || 0;
+  const imgHTML = p.imageUrl ? `<img class="pc-img" src="${esc(p.imageUrl)}" alt="Post image" onerror="this.style.display='none'">` : '';
+
+  return `<div class="post-card" id="pc-${id}">
+    <div class="pc-head">
+      <div class="pc-av" style="${avS}" onclick="openUserProfile('${p.uid}')">${avT}</div>
+      <div class="pc-info">
+        <div class="pc-nm" onclick="openUserProfile('${p.uid}')">${esc(p.authorName||'User')} ${p.authorVerified?vbadge():''}</div>
+        <div class="pc-un">@${esc(p.authorUsername||'')} · ${ts}</div>
+      </div>
+      ${isMe ? `<button class="pc-more" onclick="deletePost('${id}')" title="Delete post">🗑</button>` : ''}
+    </div>
+    <div class="pc-body">
+      <div class="pc-text">${esc(p.text)}</div>${imgHTML}
+    </div>
+    <div class="pc-actions">
+      <button class="pca-btn ${liked?'liked':''}" onclick="toggleLike('${id}',${liked})">
+        <svg fill="${liked?'#e05252':'none'}" stroke="${liked?'#e05252':'currentColor'}" viewBox="0 0 24 24" stroke-width="2"><path d="M20.84 4.61a5.5 5.5 0 00-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 00-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 000-7.78z"/></svg>
+        ${likeCount > 0 ? likeCount : ''}
+      </button>
+      <button class="pca-btn" onclick="openPostDetail('${id}')">
+        <svg fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2"><path d="M21 15a2 2 0 01-2 2H7l-4 4V5a2 2 0 012-2h14a2 2 0 012 2z"/></svg>
+        ${commentCount > 0 ? commentCount : ''}
+      </button>
+    </div>
+  </div>`;
+}
+
+/* ══════════════════════════════════════
+   POSTS: CREATE / DELETE / LIKE
+══════════════════════════════════════ */
+function openNewPostModal() {
+  G('np-text').value = '';
+  G('np-img').value = '';
+  G('np-preview').innerHTML = '';
+  G('np-msg').classList.add('hidden');
+  G('new-post-ov').classList.remove('hidden');
+  G('np-text').focus();
+}
+function closeNewPost() { G('new-post-ov').classList.add('hidden'); }
+function closeNewPostIf(e) { if (e.target.id === 'new-post-ov') closeNewPost(); }
+
+async function submitPost() {
+  const text = G('np-text').value.trim();
+  const img  = G('np-img').value.trim();
+  if (!text) return showMsg('np-msg', 'Please write something!', 'err');
+  setL('btn-np', true);
+  try {
+    const d = MY_DOC;
+    await db.collection('posts').add({
+      uid: ME.uid,
+      text, imageUrl: img,
+      authorName:     d.name || 'User',
+      authorUsername: d.username || '',
+      authorPhoto:    d.photoUrl || '',
+      authorEmoji:    d.avatarEmoji || '',
+      authorColor:    d.avatarColor || COLORS[0],
+      authorVerified: !!d.verified,
+      likes:          [],
+      commentCount:   0,
+      createdAt:      FS.serverTimestamp()
+    });
+    closeNewPost();
+    toast('Posted! ✦', 's');
+    loadMyPosts();
+    updateStats();
+  } catch (e) { showMsg('np-msg', 'Error: ' + e.message, 'err'); }
+  setL('btn-np', false);
+}
+
+async function toggleLike(postId, currentlyLiked) {
+  const ref = db.collection('posts').doc(postId);
+  try {
+    if (currentlyLiked) await ref.update({ likes: FS.arrayRemove(ME.uid) });
+    else await ref.update({ likes: FS.arrayUnion(ME.uid) });
+  } catch (e) { toast('Error: ' + e.message, 'e'); }
+}
+
+async function deletePost(postId) {
+  if (!confirm('Delete this post?')) return;
+  try {
+    await db.collection('posts').doc(postId).delete();
+    G(`pc-${postId}`)?.remove();
+    toast('Post deleted', 'i');
+    loadMyPosts();
+    updateStats();
+  } catch (e) { toast('Error: ' + e.message, 'e'); }
+}
+
+/* ══════════════════════════════════════
+   COMMENTS
+══════════════════════════════════════ */
+async function openPostDetail(postId) {
+  activePostId = postId;
+  if (unsubComments) { unsubComments(); unsubComments = null; }
+
+  // Show post preview
+  const postSnap = await db.collection('posts').doc(postId).get();
+  if (!postSnap.exists) { toast('Post not found', 'e'); return; }
+  const p = postSnap.data();
+  const avS = p.authorPhoto ? `background-image:url(${esc(p.authorPhoto)});background-color:transparent` : `background:${esc(p.authorColor||'var(--gd)')}`;
+  const avT = p.authorPhoto ? '' : (p.authorEmoji || '?');
+  G('pd-post-preview').innerHTML = `<div style="display:flex;gap:9px;align-items:center;margin-bottom:8px">
+    <div class="cm-av" style="${avS}">${avT}</div>
+    <div><div style="font-weight:700;font-size:.87rem">${esc(p.authorName)}</div><div style="font-size:.72rem;color:var(--t3)">@${esc(p.authorUsername)}</div></div>
+  </div>
+  <div style="font-size:.9rem;line-height:1.6;white-space:pre-wrap;word-break:break-word">${esc(p.text)}</div>`;
+
+  G('cm-inp').value = '';
+  G('post-detail-ov').classList.remove('hidden');
+
+  unsubComments = db.collection('posts').doc(postId).collection('comments')
+    .orderBy('createdAt', 'asc').limit(100)
+    .onSnapshot(snap => renderComments(snap.docs));
+}
+
+function renderComments(docs) {
+  const area = G('comments-area');
+  if (!docs.length) { area.innerHTML = '<div class="empty-block">No comments yet. Be the first!</div>'; return; }
+  area.innerHTML = docs.map(d => {
+    const c = d.data();
+    const avS = c.authorPhoto ? `background-image:url(${esc(c.authorPhoto)});background-color:transparent` : `background:${esc(c.authorColor||'var(--gd)')}`;
+    const avT = c.authorPhoto ? '' : (c.authorEmoji || '?');
+    return `<div class="comment-item">
+      <div class="cm-av" style="${avS}">${avT}</div>
+      <div class="cm-body"><div class="cm-nm">${esc(c.authorName)}</div><div class="cm-text">${esc(c.text)}</div><div class="cm-time">${c.createdAt ? ago(c.createdAt.toDate()) : ''}</div></div>
+    </div>`;
+  }).join('');
+  area.scrollTop = area.scrollHeight;
+}
+
+async function submitComment() {
+  const text = G('cm-inp').value.trim();
+  if (!text || !activePostId) return;
+  G('cm-inp').value = '';
+  const d = MY_DOC;
+  try {
+    await db.collection('posts').doc(activePostId).collection('comments').add({
+      uid: ME.uid, text,
+      authorName:     d.name || 'User',
+      authorUsername: d.username || '',
+      authorPhoto:    d.photoUrl || '',
+      authorEmoji:    d.avatarEmoji || '',
+      authorColor:    d.avatarColor || COLORS[0],
+      createdAt:      FS.serverTimestamp()
+    });
+    await db.collection('posts').doc(activePostId).update({ commentCount: FS.increment(1) });
+  } catch (e) { toast('Error: ' + e.message, 'e'); }
+}
+
+function closePostDetail() {
+  G('post-detail-ov').classList.add('hidden');
+  if (unsubComments) { unsubComments(); unsubComments = null; }
+  activePostId = null;
+}
+function closePostDetailIf(e) { if (e.target.id === 'post-detail-ov') closePostDetail(); }
+
+/* ══════════════════════════════════════
+   FRIENDS
+══════════════════════════════════════ */
+async function fetchAllUsers() {
+  const snap = await db.collection('users').where('status', '==', 'approved').get();
+  ALL_USERS = [];
+  snap.docs.forEach(d => { if (d.id !== ME.uid) ALL_USERS.push({ id: d.id, ...d.data() }); });
+}
+
+function listenFriendRequests() {
+  // Incoming
+  unsubReqs = db.collection('friendRequests')
+    .where('to', '==', ME.uid).where('status', '==', 'pending')
+    .onSnapshot(snap => {
+      FRIEND_REQUESTS = snap.docs.map(d => ({ id: d.id, ...d.data() }));
+      renderIncomingRequests();
+      updateFriendBadge();
+    });
+
+  // Sent (outgoing)
+  unsubSentReqs = db.collection('friendRequests')
+    .where('from', '==', ME.uid).where('status', '==', 'pending')
+    .onSnapshot(snap => {
+      MY_SENT_REQUESTS = snap.docs.map(d => ({ id: d.id, ...d.data() }));
+      // Refresh search results if visible
+      const q = G('people-search').value;
+      if (q) performPeopleSearch(q);
+    });
+}
+
+function renderIncomingRequests() {
+  const el = G('incoming-requests');
+  const cnt = G('req-count');
+  cnt.textContent = FRIEND_REQUESTS.length;
+  if (!FRIEND_REQUESTS.length) { el.innerHTML = '<div class="empty-block">No pending requests</div>'; return; }
+
+  el.innerHTML = FRIEND_REQUESTS.map(req => {
+    const u = ALL_USERS.find(x => x.id === req.from) || { name: 'User', username: '' };
+    const avS = u.photoUrl ? `background-image:url(${esc(u.photoUrl)});background-color:transparent` : `background:${esc(u.avatarColor||'var(--gd)')}`;
+    const avT = u.photoUrl ? '' : (u.avatarEmoji || '?');
+    return `<div class="user-row">
+      <div class="ur-av" style="${avS}" onclick="openUserProfile('${req.from}')">${avT}</div>
+      <div class="ur-info">
+        <div class="ur-nm" onclick="openUserProfile('${req.from}')">${esc(u.name||'User')} ${u.verified?vbadge():''}</div>
+        <div class="ur-un">@${esc(u.username||'')} wants to be friends</div>
+      </div>
+      <div class="ur-actions">
+        <button class="ur-btn ub-accept" onclick="acceptRequest('${req.id}','${req.from}')">✓</button>
+        <button class="ur-btn ub-decline" onclick="declineRequest('${req.id}')">✕</button>
+      </div>
+    </div>`;
+  }).join('');
+}
+
+function updateFriendBadge() {
+  const dot = G('bnav-req-dot');
+  dot.classList.toggle('hidden', FRIEND_REQUESTS.length === 0);
+}
+
+function renderFriendsList() {
+  const el = G('friends-list');
+  const cnt = G('friends-count');
+  const friends = ALL_USERS.filter(u => FRIENDS.includes(u.id));
+  cnt.textContent = friends.length;
+  if (!friends.length) { el.innerHTML = '<div class="empty-block">No friends yet — search for people above!</div>'; return; }
+
+  el.innerHTML = friends.map(u => {
+    const avS = u.photoUrl ? `background-image:url(${esc(u.photoUrl)});background-color:transparent` : `background:${esc(u.avatarColor||'var(--gd)')}`;
+    const avT = u.photoUrl ? '' : (u.avatarEmoji || '?');
+    return `<div class="user-row">
+      <div class="ur-av" style="${avS}" onclick="openUserProfile('${u.id}')">${avT}</div>
+      <div class="ur-info">
+        <div class="ur-nm" onclick="openUserProfile('${u.id}')">${esc(u.name||'User')} ${u.verified?vbadge():''}</div>
+        <div class="ur-un">@${esc(u.username||'')} ${u.online ? '· 🟢 Online' : ''}</div>
+      </div>
+      <div class="ur-actions">
+        <button class="ur-btn ub-unfriend" onclick="unfriend('${u.id}')">Remove</button>
+      </div>
+    </div>`;
+  }).join('');
+}
+
+function performPeopleSearch(query) {
+  const q = query.toLowerCase().trim();
+  const el = G('search-results');
+  if (q.length < 1) { el.innerHTML = ''; return; }
+
+  const matches = ALL_USERS.filter(u =>
+    (u.name || '').toLowerCase().includes(q) ||
+    (u.username || '').toLowerCase().includes(q)
+  ).slice(0, 15);
+
+  if (!matches.length) { el.innerHTML = '<div class="empty-block">No users found</div>'; return; }
+
+  el.innerHTML = matches.map(u => {
+    const avS = u.photoUrl ? `background-image:url(${esc(u.photoUrl)});background-color:transparent` : `background:${esc(u.avatarColor||'var(--gd)')}`;
+    const avT = u.photoUrl ? '' : (u.avatarEmoji || '?');
+    const isFriend = FRIENDS.includes(u.id);
+    const sentReq  = MY_SENT_REQUESTS.find(r => r.to === u.id);
+    const incomingReq = FRIEND_REQUESTS.find(r => r.from === u.id);
+
+    let actionBtn = '';
+    if (isFriend) {
+      actionBtn = `<button class="ur-btn ub-friends" disabled>Friends ✓</button>`;
+    } else if (incomingReq) {
+      actionBtn = `<button class="ur-btn ub-accept" onclick="acceptRequest('${incomingReq.id}','${u.id}')">Accept</button>`;
+    } else if (sentReq) {
+      actionBtn = `<button class="ur-btn ub-cancel" onclick="cancelRequest('${sentReq.id}')">Requested</button>`;
+    } else {
+      actionBtn = `<button class="ur-btn ub-add" onclick="sendFriendRequest('${u.id}')">+ Add</button>`;
+    }
+
+    return `<div class="user-row">
+      <div class="ur-av" style="${avS}" onclick="openUserProfile('${u.id}')">${avT}</div>
+      <div class="ur-info">
+        <div class="ur-nm" onclick="openUserProfile('${u.id}')">${esc(u.name||'User')} ${u.verified?vbadge():''}</div>
+        <div class="ur-un">@${esc(u.username||'')}</div>
+      </div>
+      <div class="ur-actions">${actionBtn}</div>
+    </div>`;
+  }).join('');
+}
+
+async function sendFriendRequest(toUid) {
+  try {
+    // Check not already sent
+    const existing = await db.collection('friendRequests')
+      .where('from', '==', ME.uid).where('to', '==', toUid).get();
+    if (!existing.empty) { toast('Request already sent', 'i'); return; }
+
+    await db.collection('friendRequests').add({
+      from: ME.uid, to: toUid,
+      status: 'pending',
+      createdAt: FS.serverTimestamp()
+    });
+    toast('Friend request sent!', 's');
+    performPeopleSearch(G('people-search').value);
+  } catch (e) { toast('Error: ' + e.message, 'e'); }
+}
+
+async function cancelRequest(reqId) {
+  try {
+    await db.collection('friendRequests').doc(reqId).delete();
+    toast('Request cancelled', 'i');
+  } catch (e) { toast('Error: ' + e.message, 'e'); }
+}
+
+async function acceptRequest(reqId, fromUid) {
+  try {
+    await db.collection('friendRequests').doc(reqId).update({ status: 'accepted' });
+    // Add each other as friends
+    await db.collection('users').doc(ME.uid).update({ friends: FS.arrayUnion(fromUid) });
+    await db.collection('users').doc(fromUid).update({ friends: FS.arrayUnion(ME.uid) });
+    toast('You are now friends! 🎉', 's');
+    await fetchAllUsers();
+    renderFriendsList();
+    performPeopleSearch(G('people-search').value);
+  } catch (e) { toast('Error: ' + e.message, 'e'); }
+}
+
+async function declineRequest(reqId) {
+  try {
+    await db.collection('friendRequests').doc(reqId).update({ status: 'rejected' });
+    toast('Request declined', 'i');
+  } catch (e) { toast('Error: ' + e.message, 'e'); }
+}
+
+async function unfriend(uid) {
+  if (!confirm('Remove this friend?')) return;
+  try {
+    await db.collection('users').doc(ME.uid).update({ friends: FS.arrayRemove(uid) });
+    await db.collection('users').doc(uid).update({ friends: FS.arrayRemove(ME.uid) });
+    // Delete friend request docs between them
+    const reqs = await db.collection('friendRequests')
+      .where('from', 'in', [ME.uid, uid]).get();
+    reqs.docs.forEach(d => {
+      const r = d.data();
+      if ((r.from === ME.uid && r.to === uid) || (r.from === uid && r.to === ME.uid))
+        d.ref.delete();
+    });
+    toast('Friend removed', 'i');
+    await fetchAllUsers();
+    renderFriendsList();
+  } catch (e) { toast('Error: ' + e.message, 'e'); }
+}
+
+/* ══════════════════════════════════════
+   USER PROFILE MODAL
+══════════════════════════════════════ */
+async function openUserProfile(uid) {
+  if (uid === ME.uid) { switchView('profile'); return; }
+  activeUserId = uid;
+
+  let u = ALL_USERS.find(x => x.id === uid);
+  if (!u) {
+    const snap = await db.collection('users').doc(uid).get();
+    if (!snap.exists) { toast('User not found', 'e'); return; }
+    u = { id: uid, ...snap.data() };
+  }
+
+  const avS = u.photoUrl ? `background-image:url(${esc(u.photoUrl)});background-color:transparent` : `background:${esc(u.avatarColor||'var(--gd)')}`;
+  const avT = u.photoUrl ? '' : (u.avatarEmoji || '?');
+  G('up-av').style.cssText = avS; G('up-av').textContent = avT;
+  G('up-nm').innerHTML = esc(u.name||'User') + ' ' + (u.verified ? vbadge() : '');
+  G('up-un').textContent = '@' + (u.username || '');
+  toggleVisEl('up-tagline', u.tagline, `"${u.tagline}"`);
+  toggleVisEl('up-bio', u.bio, u.bio);
+
+  // Stats
+  const postsSnap = await db.collection('posts').where('uid', '==', uid).get();
+  G('up-stat-posts').textContent = postsSnap.size;
+  G('up-stat-friends').textContent = (u.friends || []).length;
+
+  // Friend action button
+  const actionEl = G('up-friend-action');
+  const isFriend = FRIENDS.includes(uid);
+  const sentReq  = MY_SENT_REQUESTS.find(r => r.to === uid);
+  const inReq    = FRIEND_REQUESTS.find(r => r.from === uid);
+
+  if (isFriend) {
+    actionEl.innerHTML = `<button class="btn btn-danger btn-sm" onclick="unfriend('${uid}');closeUserProf()">Remove Friend</button>`;
+  } else if (inReq) {
+    actionEl.innerHTML = `<div style="display:flex;gap:7px">
+      <button class="btn btn-green btn-sm" style="flex:1" onclick="acceptRequest('${inReq.id}','${uid}');closeUserProf()">Accept Request</button>
+      <button class="btn btn-danger btn-sm" style="flex:1" onclick="declineRequest('${inReq.id}');closeUserProf()">Decline</button>
+    </div>`;
+  } else if (sentReq) {
+    actionEl.innerHTML = `<button class="btn btn-ghost btn-sm" onclick="cancelRequest('${sentReq.id}');closeUserProf()">Cancel Request</button>`;
+  } else {
+    actionEl.innerHTML = `<button class="btn btn-gold btn-sm" onclick="sendFriendRequest('${uid}')">+ Add Friend</button>`;
+  }
+
+  // Recent posts
+  const upPosts = G('up-posts');
+  upPosts.innerHTML = '<div class="empty-block" style="padding:12px 0">Loading…</div>';
+  const pSnap = await db.collection('posts').where('uid', '==', uid).orderBy('createdAt', 'desc').limit(5).get();
+  if (!pSnap.empty) {
+    upPosts.innerHTML = pSnap.docs.map(d => {
+      const p = d.data();
+      return `<div style="background:var(--s2);border:1px solid var(--b1);border-radius:10px;padding:10px;cursor:pointer" onclick="openPostDetail('${d.id}')">
+        <div style="font-size:.88rem;line-height:1.55;white-space:pre-wrap;word-break:break-word">${esc(p.text.slice(0,120))}${p.text.length>120?'…':''}</div>
+        <div style="font-size:.7rem;color:var(--t3);margin-top:5px">${p.createdAt ? ago(p.createdAt.toDate()) : ''} · ❤️ ${(p.likes||[]).length} · 💬 ${p.commentCount||0}</div>
+      </div>`;
+    }).join('');
+  } else {
+    upPosts.innerHTML = '<div class="empty-block" style="padding:12px 0">No posts yet</div>';
+  }
+
+  G('user-prof-ov').classList.remove('hidden');
+}
+function closeUserProf() { G('user-prof-ov').classList.add('hidden'); activeUserId = null; }
+function closeUserProfIf(e) { if (e.target.id === 'user-prof-ov') closeUserProf(); }
+
+/* ══════════════════════════════════════
+   MY PROFILE
+══════════════════════════════════════ */
+function renderProfileHeader() {
+  if (!MY_DOC) return;
+  const d = MY_DOC;
+  setAv(G('my-pav'), d);
+  G('my-ph-name').innerHTML = esc(d.name||'User') + ' ' + (d.verified ? vbadge() : '');
+  G('my-ph-un').textContent = '@' + (d.username||'');
+  toggleVisEl('my-ph-tagline', d.tagline, `"${d.tagline}"`);
+  toggleVisEl('my-ph-bio', d.bio, d.bio);
+  G('stat-friends').textContent = (d.friends||[]).length;
+  updateNavAv();
+}
+
+async function updateStats() {
+  if (!ME) return;
+  const snap = await db.collection('posts').where('uid', '==', ME.uid).get();
+  G('stat-posts').textContent = snap.size;
+}
+
+async function loadMyPosts() {
+  if (!ME) return;
+  const snap = await db.collection('posts').where('uid', '==', ME.uid).orderBy('createdAt', 'desc').limit(30).get();
+  const el = G('my-posts-list');
+  if (snap.empty) { el.innerHTML = '<div class="empty-block">No posts yet. Create your first one!</div>'; return; }
+  el.innerHTML = snap.docs.map(d => postCardHTML(d.id, d.data())).join('');
+  G('stat-posts').textContent = snap.size;
+}
+
+/* ══════════════════════════════════════
+   EDIT PROFILE
+══════════════════════════════════════ */
+function openEditProfile() {
+  const d = MY_DOC;
+  G('ep-name').value    = d.name || '';
+  G('ep-tagline').value = d.tagline || '';
+  G('ep-bio').value     = d.bio || '';
+  G('ep-photo').value   = d.photoUrl || '';
+
+  selEmoji = d.avatarEmoji || EMOJIS[0];
+  selColor = d.avatarColor || COLORS[0];
+
+  G('ep-av-grid').innerHTML = EMOJIS.map(e => `<div class="av-opt ${e===selEmoji?'sel':''}" onclick="pickEmoji(this,'${e}')">${e}</div>`).join('');
+  G('ep-col-row').innerHTML = COLORS.map(c => `<div class="col-opt ${c===selColor?'sel':''}" style="background:${c}" onclick="pickColor(this,'${c}')"></div>`).join('');
+  G('ep-msg').classList.add('hidden');
+  G('edit-prof-ov').classList.remove('hidden');
+}
+
+function pickEmoji(node, e) {
+  selEmoji = e;
+  document.querySelectorAll('.av-opt').forEach(x => x.classList.remove('sel'));
+  node.classList.add('sel');
+}
+function pickColor(node, c) {
+  selColor = c;
+  document.querySelectorAll('.col-opt').forEach(x => x.classList.remove('sel'));
+  node.classList.add('sel');
+}
+
+async function saveProfile() {
+  const name     = G('ep-name').value.trim();
+  const tagline  = G('ep-tagline').value.trim();
+  const bio      = G('ep-bio').value.trim();
+  const photoUrl = G('ep-photo').value.trim();
+  if (!name) return showMsg('ep-msg', 'Name cannot be empty.', 'err');
+  setL('btn-ep', true);
+
+  const updates = {
+    name, tagline, bio, photoUrl,
+    initials:    name.split(' ').filter(Boolean).map(n=>n[0]).join('').toUpperCase().slice(0,2),
+    avatarEmoji: selEmoji || EMOJIS[0],
+    avatarColor: selColor || COLORS[0]
+  };
+
+  try {
+    await db.collection('users').doc(ME.uid).update(updates);
+    Object.assign(MY_DOC, updates);
+
+    // Update denormalized author info on own posts (last 30)
+    const pSnap = await db.collection('posts').where('uid', '==', ME.uid).limit(30).get();
+    const batch = db.batch();
+    pSnap.docs.forEach(d => batch.update(d.ref, {
+      authorName: name, authorUsername: MY_DOC.username || '',
+      authorPhoto: photoUrl, authorEmoji: updates.avatarEmoji,
+      authorColor: updates.avatarColor
+    }));
+    await batch.commit();
+
+    renderProfileHeader();
+    closeEditProf();
+    toast('Profile saved ✓', 's');
+    loadMyPosts();
+  } catch (e) { showMsg('ep-msg', 'Error: ' + e.message, 'err'); }
+  setL('btn-ep', false);
+}
+
+function closeEditProf() { G('edit-prof-ov').classList.add('hidden'); }
+function closeEditProfIf(e) { if (e.target.id === 'edit-prof-ov') closeEditProf(); }
+
+/* ══════════════════════════════════════
+   ADMIN
+══════════════════════════════════════ */
+function swAdminTab(t) {
+  ['p','a','r'].forEach(x => {
+    G(`adtab-${x}`).classList.toggle('on', x===t);
+    G(`adtab-${x}-body`).classList.toggle('hidden', x!==t);
+  });
+}
+
+function listenAdmin() {
+  db.collection('users').onSnapshot(snap => {
+    const pend = [], appr = [], rej = [];
+    snap.docs.forEach(d => {
+      const u = { id: d.id, ...d.data() };
+      if (u.email === ADMIN_EMAIL) return;
+      if (u.status === 'pending') pend.push(u);
+      else if (u.status === 'approved') appr.push(u);
+      else rej.push(u);
+    });
+    G('acnt-p').textContent = pend.length;
+    renderAdminCards('admin-pend', pend, 'pending');
+    renderAdminCards('admin-appr', appr, 'approved');
+    renderAdminCards('admin-rej', rej, 'rejected');
+  });
+}
+
+function renderAdminCards(id, users, type) {
+  const el = G(id);
+  if (!users.length) { el.innerHTML = '<p style="color:var(--t3);font-size:.8rem;padding:8px 0">None.</p>'; return; }
+  el.innerHTML = users.map(u => {
+    const avS = u.photoUrl ? `background-image:url(${esc(u.photoUrl)})` : `background:${esc(u.avatarColor||'var(--gd)')}`;
+    const avT = u.photoUrl ? '' : (u.avatarEmoji||u.initials||'?');
+    return `<div class="ucard">
+      <div class="uc-row">
+        <div class="uc-av" style="${avS}">${avT}</div>
+        <div class="uc-info">
+          <div class="uc-nm">${esc(u.name||'User')}</div>
+          <div class="uc-un">@${esc(u.username||'')}</div>
+          <div class="uc-em">${esc(u.email||'')}</div>
+        </div>
+      </div>
+      <div class="uc-actions">
+        ${type==='pending' ? `<button class="ba" onclick="setUserStatus('${u.id}','approved')">✓ Approve</button><button class="br" onclick="setUserStatus('${u.id}','rejected')">✗ Reject</button>` : ''}
+        ${type==='approved' ? `<button class="br" onclick="setUserStatus('${u.id}','rejected')">Revoke</button>` : ''}
+        ${type==='rejected' ? `<button class="ba" onclick="setUserStatus('${u.id}','approved')">Reinstate</button>` : ''}
+      </div>
+    </div>`;
+  }).join('');
+}
+
+async function setUserStatus(uid, status) {
+  try { await db.collection('users').doc(uid).update({ status }); toast('User ' + status, 's'); }
+  catch (e) { toast(e.message, 'e'); }
+}
+
+/* ══════════════════════════════════════
+   AUTH ACTIONS
+══════════════════════════════════════ */
+function swTab(t) {
+  G('f-li').classList.toggle('hidden', t!=='li');
+  G('f-reg').classList.toggle('hidden', t!=='reg');
+  G('t-li').classList.toggle('on', t==='li');
+  G('t-reg').classList.toggle('on', t==='reg');
+  G('auth-msg').classList.add('hidden');
+}
+function cleanUn(inp) { inp.value = inp.value.toLowerCase().replace(/[^a-z0-9_]/g,'').slice(0,20); }
+
+async function doLogin() {
+  const em = gv('l-em'), pw = gv('l-pw');
+  if (!em || !pw) return showAuthMsg('Fill all fields.', 'err');
+  setL('btn-li', true);
+  try { await auth.signInWithEmailAndPassword(em, pw); }
+  catch (e) { showAuthMsg(fmtErr(e.code)||e.message, 'err'); setL('btn-li', false); }
+}
+
+async function doReg() {
+  clearAuthMsg();
+  const nm = gv('r-nm'), un = gv('r-un'), em = gv('r-em'), pw = gv('r-pw');
+  if (!nm||!un||!em||!pw) return showAuthMsg('Fill all fields.', 'err');
+  if (un.length < 3) return showAuthMsg('Username: min 3 chars.', 'err');
+  if (!/^[a-z0-9_]+$/.test(un)) return showAuthMsg('Username: letters, numbers, underscores only.', 'err');
+  if (pw.length < 6) return showAuthMsg('Password: min 6 characters.', 'err');
+  setL('btn-reg', true);
+  REGISTERING = true;
+
+  try {
+    const cred = await auth.createUserWithEmailAndPassword(em, pw);
+    const uid  = cred.user.uid;
+    const isAdmin = (em === ADMIN_EMAIL);
+
+    await cred.user.getIdToken(true);
+    await sleep(500);
+
+    const ucheck = await db.collection('users').where('username', '==', un).limit(1).get();
+    if (!ucheck.empty) {
+      await cred.user.delete();
+      showAuthMsg('Username already taken.', 'err');
+      setL('btn-reg', false); REGISTERING = false; return;
+    }
+
+    const initials = nm.split(' ').filter(Boolean).map(n=>n[0]).join('').toUpperCase().slice(0,2);
+    await db.collection('users').doc(uid).set({
+      uid, name: nm, username: un, email: em,
+      status: isAdmin ? 'approved' : 'pending',
+      verified: isAdmin,
+      bio: '', tagline: '', photoUrl: '',
+      avatarEmoji: EMOJIS[Math.floor(Math.random()*EMOJIS.length)],
+      avatarColor: COLORS[Math.floor(Math.random()*COLORS.length)],
+      initials: initials,
+      friends: [],
+      online: false, lastSeen: null,
+      createdAt: FS.serverTimestamp()
+    });
+
+    if (!isAdmin) {
+      await auth.signOut();
+      ['r-nm','r-un','r-em','r-pw'].forEach(i => { const el=G(i); if(el) el.value=''; });
+      showAuthMsg('✓ Account created! Awaiting admin approval.', 'ok');
+      setL('btn-reg', false);
+    }
+  } catch (e) {
+    try { const cu = auth.currentUser; if (cu && !MY_DOC) await cu.delete(); } catch(_){}
+    showAuthMsg(fmtErr(e.code)||e.message, 'err');
+    setL('btn-reg', false);
+  } finally { REGISTERING = false; }
+}
+
+async function doLogout() {
+  if (ME) db.collection('users').doc(ME.uid).update({ online: false }).catch(()=>{});
+  [unsubMyDoc, unsubFeed, unsubMyPosts, unsubReqs, unsubSentReqs].forEach(u => { if(u) u(); });
+  ME=null; MY_DOC=null; IS_ADMIN=false; FRIENDS=[]; ALL_USERS=[]; FRIEND_REQUESTS=[]; MY_SENT_REQUESTS=[];
+  await auth.signOut();
+}
+
+/* ══════════════════════════════════════
+   UI HELPERS
+══════════════════════════════════════ */
+function initUI() {
+  const d = MY_DOC;
+  setAv(G('nav-av'), d);
+  renderProfileHeader();
+  updateStats();
+  renderFriendsList();
+  // Init feed create avatar
+  setAv(G('feed-create-av'), d);
+}
+
+function updateNavAv() {
+  setAv(G('nav-av'), MY_DOC);
+  setAv(G('feed-create-av'), MY_DOC);
+}
+
+function switchView(name) {
+  ['feed','friends','profile'].forEach(v => {
+    G('view-'+v).classList.toggle('active', v===name);
+    G('bnav-'+v).classList.toggle('active', v===name);
+  });
+  if (name === 'friends') {
+    renderFriendsList();
+    fetchAllUsers().then(() => {
+      renderIncomingRequests();
+      const q = G('people-search').value;
+      if (q) performPeopleSearch(q);
+    });
+  }
+  if (name === 'profile') { renderProfileHeader(); loadMyPosts(); updateStats(); }
+}
+
+const SCREENS = ['auth','pending','main','admin'];
+function showScreen(name) { SCREENS.forEach(s => { const n=G(s+'-screen'); if(n) n.classList.toggle('hidden', s!==name); }); }
+function hideLoader() { const n=G('app-loader'); if(!n) return; n.style.opacity='0'; setTimeout(()=>n.remove(),500); }
+
+function toast(msg, type='i') {
+  const t = document.createElement('div'); t.className=`toast ${type}`;
+  const ic = {s:'✓',e:'✕',i:'ℹ',b:'🔵'};
+  t.innerHTML = `<span>${ic[type]||'•'}</span><span>${msg}</span>`;
+  G('toasts').appendChild(t);
+  setTimeout(()=>{ t.style.animation='tout .2s ease forwards'; setTimeout(()=>t.remove(),220); }, 3200);
+}
+
+function vbadge() {
+  return `<svg class="vb" viewBox="0 0 15 15" fill="none"><circle cx="7.5" cy="7.5" r="7.5" fill="#4a9eff"/><path d="M4.5 7.5l2 2 4-4" stroke="white" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg>`;
+}
+
+function setAv(node, d) {
+  if (!node) return;
+  if (d && d.photoUrl) {
+    node.style.backgroundImage = `url(${esc(d.photoUrl)})`;
+    node.style.background = '';
+    node.textContent = '';
+  } else {
+    node.style.backgroundImage = 'none';
+    node.style.background = (d && d.avatarColor) || 'var(--gd)';
+    node.textContent = (d && (d.avatarEmoji || d.initials)) || '?';
+  }
+}
+
+function toggleVisEl(id, val, content) {
+  const el = G(id);
+  if (!el) return;
+  if (val) { el.textContent = content || val; el.classList.remove('hidden'); }
+  else el.classList.add('hidden');
+}
+
+function G(id) { return document.getElementById(id); }
+function gv(id) { return (G(id)?.value||'').trim(); }
+function sleep(ms) { return new Promise(r=>setTimeout(r,ms)); }
+function esc(s) { const d=document.createElement('div'); d.appendChild(document.createTextNode(String(s||''))); return d.innerHTML; }
+function showAuthMsg(msg, type) { const n=G('auth-msg'); n.textContent=msg; n.className='mbox '+type; n.classList.remove('hidden'); }
+function clearAuthMsg() { G('auth-msg').classList.add('hidden'); }
+function showMsg(id, msg, type) { const n=G(id); if(!n) return; n.textContent=msg; n.className='mbox '+type; n.classList.remove('hidden'); }
+function setL(id, on) { const b=G(id); if(!b) return; b.disabled=on; if(on){b.dataset.orig=b.textContent;b.textContent='Please wait…';}else{b.textContent=b.dataset.orig||b.textContent;} }
+function ago(d) {
+  const s=Math.floor((new Date()-d)/1000);
+  if(s<60) return 'just now';
+  if(s<3600) return Math.floor(s/60)+'m ago';
+  if(s<86400) return Math.floor(s/3600)+'h ago';
+  if(s<604800) return Math.floor(s/86400)+'d ago';
+  return d.toLocaleDateString('en-US',{month:'short',day:'numeric'});
+}
+function fmtErr(code) {
+  const m={'auth/user-not-found':'Account not found.','auth/wrong-password':'Wrong password.','auth/invalid-credential':'Invalid credentials.','auth/email-already-in-use':'Email already registered.','auth/weak-password':'Password too weak.'};
+  return m[code]||null;
+}
+</script>
+</body>
+</html>
