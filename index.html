@@ -7,30 +7,6 @@
 <meta name="description" content="A private social network. Only your friends can see your posts.">
 <meta name="theme-color" content="#c9a84c">
 
-<!--
-  ╔══════════════════════════════════════════════════════════╗
-  ║  LOOP — FRIEND-ONLY SOCIAL MEDIA  (Firebase Free Tier)  ║
-  ╠══════════════════════════════════════════════════════════╣
-  ║  SETUP STEPS:                                           ║
-  ║  1. Go to https://console.firebase.google.com           ║
-  ║  2. Create a project → Enable Firestore & Auth          ║
-  ║  3. Auth → Sign-in method → Enable Email/Password       ║
-  ║  4. Firestore → Rules → Paste these rules:              ║
-  ║                                                         ║
-  ║  rules_version = '2';                                   ║
-  ║  service cloud.firestore {                              ║
-  ║    match /databases/{database}/documents {              ║
-  ║      match /{document=**} {                             ║
-  ║        allow read, write: if request.auth != null;      ║
-  ║      }                                                  ║
-  ║    }                                                    ║
-  ║  }                                                      ║
-  ║                                                         ║
-  ║  5. Replace FIREBASE_CONFIG below with your config      ║
-  ║  6. Set ADMIN_EMAIL to your email                       ║
-  ╚══════════════════════════════════════════════════════════╝
--->
-
 <script>
 const firebaseConfig = {
   apiKey: "AIzaSyCLFiSo1pTzAQsxo16CcyBEW-VThJC2LxQ",
@@ -309,14 +285,12 @@ button{cursor:pointer;font-family:var(--fu)}
 </head>
 <body>
 
-<!-- ═══ LOADER ═══════════════════════════════ -->
 <div id="app-loader">
   <div class="L">✦ LOOP</div>
   <div class="S">Your Circle · Your Feed</div>
   <div class="spin"></div>
 </div>
 
-<!-- ═══ AUTH SCREEN ══════════════════════════ -->
 <div id="auth-screen" class="hidden">
   <div class="acard">
     <h1 class="alogo">✦ LOOP</h1>
@@ -343,7 +317,6 @@ button{cursor:pointer;font-family:var(--fu)}
   </div>
 </div>
 
-<!-- ═══ PENDING SCREEN ═══════════════════════ -->
 <div id="pending-screen" class="hidden">
   <div class="pcard">
     <span class="picon">⏳</span>
@@ -353,7 +326,6 @@ button{cursor:pointer;font-family:var(--fu)}
   </div>
 </div>
 
-<!-- ═══ ADMIN SCREEN ══════════════════════════ -->
 <div id="admin-screen" class="hidden">
   <div class="admin-bar">
     <h1>✦ Loop Admin</h1>
@@ -376,7 +348,6 @@ button{cursor:pointer;font-family:var(--fu)}
   </div>
 </div>
 
-<!-- ═══ MAIN APP ══════════════════════════════ -->
 <div id="main-screen" class="hidden">
   <header class="top-nav">
     <div class="tnlogo">✦ LOOP</div>
@@ -385,7 +356,6 @@ button{cursor:pointer;font-family:var(--fu)}
   </header>
 
   <div class="view-container">
-    <!-- FEED VIEW -->
     <div class="view active" id="view-feed">
       <div class="create-post-box" id="create-post-trigger" onclick="openNewPostModal()">
         <div class="create-av" id="feed-create-av"></div>
@@ -397,7 +367,6 @@ button{cursor:pointer;font-family:var(--fu)}
       </div>
     </div>
 
-    <!-- FRIENDS VIEW -->
     <div class="view" id="view-friends">
       <div class="fv-section">
         <div class="fv-title">Find People</div>
@@ -417,7 +386,6 @@ button{cursor:pointer;font-family:var(--fu)}
       </div>
     </div>
 
-    <!-- PROFILE VIEW -->
     <div class="view" id="view-profile">
       <div class="prof-hero" id="my-prof-hero">
         <div class="pav-wrap">
@@ -460,7 +428,6 @@ button{cursor:pointer;font-family:var(--fu)}
   </nav>
 </div>
 
-<!-- ═══ MODAL: NEW POST ═══════════════════════ -->
 <div class="overlay hidden" id="new-post-ov" onclick="closeNewPostIf(event)">
   <div class="modal">
     <button class="mc" onclick="closeNewPost()">✕</button>
@@ -473,7 +440,6 @@ button{cursor:pointer;font-family:var(--fu)}
   </div>
 </div>
 
-<!-- ═══ MODAL: POST DETAIL / COMMENTS ════════ -->
 <div class="overlay hidden" id="post-detail-ov" onclick="closePostDetailIf(event)">
   <div class="modal" style="max-width:520px">
     <button class="mc" onclick="closePostDetail()">✕</button>
@@ -490,7 +456,6 @@ button{cursor:pointer;font-family:var(--fu)}
   </div>
 </div>
 
-<!-- ═══ MODAL: VIEW USER PROFILE ══════════════ -->
 <div class="overlay hidden" id="user-prof-ov" onclick="closeUserProfIf(event)">
   <div class="modal">
     <button class="mc" onclick="closeUserProf()">✕</button>
@@ -512,7 +477,6 @@ button{cursor:pointer;font-family:var(--fu)}
   </div>
 </div>
 
-<!-- ═══ MODAL: EDIT PROFILE ═══════════════════ -->
 <div class="overlay hidden" id="edit-prof-ov" onclick="closeEditProfIf(event)">
   <div class="modal">
     <button class="mc" onclick="closeEditProf()">✕</button>
@@ -530,7 +494,6 @@ button{cursor:pointer;font-family:var(--fu)}
 
 <div class="toasts" id="toasts"></div>
 
-<!-- Firebase -->
 <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-auth-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-firestore-compat.js"></script>
@@ -539,7 +502,7 @@ button{cursor:pointer;font-family:var(--fu)}
 /* ══════════════════════════════════════
    INIT
 ══════════════════════════════════════ */
-firebase.initializeApp(FIREBASE_CONFIG);
+firebase.initializeApp(firebaseConfig);
 const auth = firebase.auth();
 const db   = firebase.firestore();
 const FS   = firebase.firestore.FieldValue;
